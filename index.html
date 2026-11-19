@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dono</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#0e0f13;color:#eceef3;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input{font:inherit}
+#join{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{width:100%;max-width:380px;background:#171922;border:1px solid #262a38;border-radius:18px;padding:24px}
+.card h1{margin:0 0 4px;font-size:26px}
+.card p{margin:0 0 18px;color:#9aa1b5;font-size:14px;line-height:1.5}
+.card input{width:100%;padding:12px 14px;margin-bottom:10px;border-radius:10px;border:1px solid #2c3142;background:#0e0f13;color:#eceef3}
+.btn{background:#6c5ce7;color:#fff;border:0;border-radius:10px;padding:12px 16px;cursor:pointer}
+.btn:hover{background:#7b6df0}
+.card .btn{width:100%;font-weight:600}
+#err{color:#ff7b7b;font-size:13px;min-height:18px;margin-top:8px}
+#app{height:100dvh;display:flex;flex-direction:column}
+#app[hidden],#join[hidden]{display:none}
+#main{flex:1;display:flex;flex-direction:column;min-height:0}
+#stage{position:relative;flex:1;background:#000;min-height:0}
+video{background:#000}
+#them{width:100%;height:100%;object-fit:cover}
+#me{position:absolute;right:8px;bottom:8px;width:92px;height:122px;object-fit:cover;border-radius:12px;border:2px solid #2c3142;transform:scaleX(-1);z-index:3}
+#big{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
+#stage.share #big{display:block}
+#stage.share #them{position:absolute;left:8px;top:8px;width:104px;height:78px;border-radius:10px;z-index:3;border:2px solid #2c3142}
+#status{position:absolute;left:10px;bottom:10px;z-index:4;font-size:12px;background:#000a;padding:4px 10px;border-radius:20px}
+#bar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:10px;background:#12141b;border-top:1px solid #20242f}
+#bar .btn{background:#222636;padding:10px 12px;font-size:14px}
+#bar .btn.off{background:#7a2b3a}
+#bar .btn.on{background:#2d6a4f}
+#bar .btn.danger{background:#b3263e}
+#chat{height:34dvh;display:flex;flex-direction:column;background:#12141b;border-top:1px solid #20242f}
+#msgs{flex:1;overflow:auto;padding:10px 12px;font-size:14px}
+.m{margin:0 0 6px;word-break:break-word}
+.m b{color:#a99cff}
+.m.sys{color:#8b92a8;font-size:12px}
+#f{display:flex;gap:8px;padding:8px}
+#f input{flex:1;padding:11px 12px;border-radius:10px;border:1px solid #2c3142;background:#0e0f13;color:#eceef3}
+.m img,.m video,.m audio{max-width:100%;max-height:260px;border-radius:10px;display:block;margin-top:6px}
+.m a{color:#a99cff}
+#syncbox{display:none;position:absolute;inset:0;z-index:2;background:#000;align-items:center;justify-content:center}
+#stage.sync #syncbox{display:flex}
+#syncv{display:none;width:100%;height:100%;object-fit:contain}
+#synci{display:none;max-width:100%;max-height:100%;object-fit:contain}
+#syncph{display:none;padding:20px;text-align:center;color:#9aa1b5;align-items:center;justify-content:center}
+#syncinfo{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:5;font-size:12px;background:#000a;padding:4px 10px;border-radius:20px;max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stage.sync #them{position:absolute;left:8px;top:8px;width:104px;height:78px;border-radius:10px;z-index:4;border:2px solid #2c3142}
+.vol{display:flex;align-items:center;gap:6px;font-size:13px;color:#9aa1b5}
+.sbtn{background:#222636;color:#fff;border:0;border-radius:8px;padding:6px 10px;margin:4px 6px 0 0;cursor:pointer}
+.m progress{width:100%;display:block;margin-top:4px}
+@media(min-width:900px){
+ #app{flex-direction:row}
+ #chat{height:auto;width:340px;border-top:0;border-left:1px solid #20242f}
+ #me{width:130px;height:170px}
+}
+</style>
+</head>
+<body>
+
+<div id="join">
+  <div class="card">
+    <h1>🔒 Dono</h1>
+    <p>Sirf aap dono ke liye. Dost ko wahi Room Code aur Passphrase batao. Video, awaaz aur chat seedha aap dono ke beech encrypted jaate hain.</p>
+    <input id="name" placeholder="Tumhara naam" maxlength="20" autocomplete="off">
+    <input id="room" placeholder="Room code (jaise: meerut-night)" autocomplete="off">
+    <input id="pass" type="password" placeholder="Passphrase (kam se kam 6 akshar)" autocomplete="off">
+    <button class="btn" id="go">Andar jao</button>
+    <div id="err"></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <div id="main">
+    <div id="stage">
+      <video id="big" playsinline></video>
+      <video id="them" autoplay playsinline></video>
+      <video id="me" autoplay muted playsinline></video>
+      <div id="syncbox">
+        <video id="syncv" controls playsinline></video>
+        <img id="synci" alt="">
+        <div id="syncph"></div>
+        <div id="syncinfo"></div>
+      </div>
+      <div id="status">Connect ho raha hai...</div>
+    </div>
+    <div id="bar">
+      <button class="btn" id="bMic">🎤 Mic</button>
+      <button class="btn" id="bCam">📷 Camera</button>
+      <button class="btn" id="bScreen">🖥️ Screen share</button>
+      <button class="btn" id="bFile">🎬 Movie / Song chalao</button>
+      <button class="btn" id="bSync">🍿 Saath Dekho (Sync)</button>
+      <button class="btn" id="bPrev" hidden>⏮ Pichla</button>
+      <button class="btn" id="bNext" hidden>⏭ Agla</button>
+      <button class="btn" id="bSyncStop" hidden>⏹ Sync band</button>
+      <button class="btn" id="bSend">📎 Photo / Video / File bhejo</button>
+      <label class="vol">🔊 Dost ki awaaz <input type="range" id="vVoice" min="0" max="1" step="0.05" value="1"></label>
+      <button class="btn" id="bStop" hidden>⏹ Share band</button>
+      <button class="btn" id="bFull">⛶ Full</button>
+      <button class="btn danger" id="bLeave">Leave</button>
+      <input id="file" type="file" accept="video/*,audio/*" hidden>
+      <input id="sendfile" type="file" multiple hidden>
+      <input id="syncfiles" type="file" accept="video/*,audio/*,image/*" multiple hidden>
+      <input id="syncpick" type="file" accept="video/*,audio/*,image/*" multiple hidden>
+    </div>
+  </div>
+  <div id="chat">
+    <div id="msgs"></div>
+    <form id="f"><input id="txt" placeholder="Message likho..." autocomplete="off"><button class="btn">Bhejo</button></form>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+// Agar alag network (jaise mobile data) par call connect na ho, to yahan free TURN server add karo
+// (jaise metered.ca ka free plan): {urls:'turn:...',username:'...',credential:'...'}
+const ICE=[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'stun:global.stun.twilio.com:3478'}
+];
+
+const $=id=>document.getElementById(id);
+const enc=new TextEncoder(),dec=new TextDecoder();
+let peer,conn,key,localStream=null,myName='',partner='',helloDone=false;
+let shared=null,shareCall=null,fileURL=null,ownsTracks=false;
+
+async function sha(s){
+  const b=await crypto.subtle.digest('SHA-256',enc.encode(s));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function deriveKey(room,pass){
+  const base=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('dono:'+room),iterations:200000,hash:'SHA-256'},
+    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function seal(obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));
+  return {iv:Array.from(iv),ct:Array.from(new Uint8Array(ct))};
+}
+async function unseal(m){
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(m.iv)},key,new Uint8Array(m.ct));
+  return JSON.parse(dec.decode(pt));
+}
+async function send(o){ if(conn&&conn.open) conn.send(await seal(o)); }
+
+function setStatus(t){ $('status').textContent=t; }
+function addMsg(who,text,sys){
+  const d=document.createElement('div'); d.className='m'+(sys?' sys':'');
+  if(who){ const b=document.createElement('b'); b.textContent=who+': '; d.appendChild(b); }
+  d.appendChild(document.createTextNode(text));
+  $('msgs').appendChild(d); $('msgs').scrollTop=1e9;
+}
+
+$('go').onclick=async()=>{
+  const name=$('name').value.trim(),room=$('room').value.trim().toLowerCase(),pass=$('pass').value;
+  const err=$('err'); err.textContent='';
+  if(!name||!room||pass.length<6){ err.textContent='Naam, room code aur 6+ akshar ki passphrase daalo.'; return; }
+  if(!window.crypto||!crypto.subtle){ err.textContent='Ye page HTTPS par kholo (https:// link se).'; return; }
+  $('go').disabled=true; $('go').textContent='Ruko...';
+  myName=name;
+  try{
+    key=await deriveKey(room,pass);
+    cleanOpfs();
+    try{ localStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:{echoCancellation:true,noiseSuppression:true}}); }
+    catch(e){ try{ localStream=await navigator.mediaDevices.getUserMedia({audio:true}); }catch(e2){ localStream=null; } }
+    if(localStream) $('me').srcObject=localStream;
+    $('join').hidden=true; $('app').hidden=false;
+    if(!localStream) addMsg('','Camera/mic nahi mila. Chat aur sharing chalegi.',true);
+    const id='dono-'+(await sha(room+'|'+pass)).slice(0,32);
+    boot(id);
+  }catch(e){
+    err.textContent='Kuch gadbad hui: '+e.message;
+    $('go').disabled=false; $('go').textContent='Andar jao';
+  }
+};
+
+function peerOpts(){ return {config:{iceServers:ICE}}; }
+function onPeerError(id){
+  return e=>{
+    if(e.type==='unavailable-id'){ peer.destroy(); joinAsGuest(id); }
+    else if(e.type==='peer-unavailable'){ setStatus('Dost abhi nahi aaya ya room code galat hai. Thodi der baad dobara kholo.'); }
+    else setStatus('Error: '+e.type);
+  };
+}
+function boot(id){
+  peer=new Peer(id,peerOpts());
+  peer.on('open',()=>{ setStatus('Dost ke aane ka intezaar...'); });
+  peer.on('connection',c=>{
+    if(conn&&conn.open){ c.on('open',()=>c.close()); return; } // teesra insaan andar nahi aa sakta
+    conn=c; setupConn(c);
+  });
+  peer.on('call',onCall);
+  peer.on('error',onPeerError(id));
+}
+function joinAsGuest(id){
+  peer=new Peer(peerOpts());
+  peer.on('open',()=>{ setStatus('Dost se jud raha hai...'); conn=peer.connect(id,{reliable:true}); setupConn(conn); });
+  peer.on('call',onCall);
+  peer.on('error',onPeerError(id));
+}
+
+function setupConn(c){
+  c.on('open',()=>{ send({t:'hello',name:myName}); });
+  c.on('data',onData);
+  c.on('close',()=>{
+    setStatus('Dost disconnect ho gaya'); addMsg('','Dost chala gaya.',true);
+    $('them').srcObject=null; hideBig(); closeSync(false); helloDone=false; conn=null;
+  });
+}
+async function onData(m){
+  if(m&&m.b===1){ await onChunk(m); return; }
+  let d;
+  try{ d=await unseal(m); }
+  catch(e){ setStatus('Passphrase match nahi hui. Connection band.'); try{conn.close();}catch(_){} return; }
+  if(d.t==='hello'){
+    if(helloDone) return; helloDone=true; keepAwake();
+    partner=d.name; setStatus('🔒 '+partner+' ke saath connected'); addMsg('',partner+' aa gaya. Sab kuch encrypted hai.',true);
+    if(localStream) peer.call(conn.peer,localStream,{metadata:{kind:'cam'}});
+    if(shared) shareCall=peer.call(conn.peer,shared,{metadata:{kind:'share'}});
+  }else if(d.t==='chat'){ addMsg(partner||'Dost',d.text); }
+  else if(d.t==='sharestop'){ hideBig(); }
+  else if(d.t==='fileinfo'){ gotInfo(d); }
+  else if(d.t==='syncstart'){ onSyncStart(d); }
+  else if(d.t==='sync'){ applySync(d); }
+  else if(d.t==='syncstop'){ closeSync(false); addMsg('','Dost ne sync band kar diya.',true); }
+  else if(d.t==='syncreq'){ serveSync(d.need||[]); }
+  else if(d.t==='ack'){ acks[d.id]=Math.max(acks[d.id]||0,d.n); }
+  else if(d.t==='abort'){ aborted.add(d.id); }
+}
+
+// ---------- Photo / Video / File transfer (encrypted, seedha dost tak) ----------
+const rx={};
+function addProgress(label){
+  const row=document.createElement('div'); row.className='m sys';
+  row.appendChild(document.createTextNode(label));
+  const bar=document.createElement('progress'); bar.max=100; bar.value=0; row.appendChild(bar);
+  $('msgs').appendChild(row); $('msgs').scrollTop=1e9;
+  return {row,bar};
+}
+function renderFile(who,info,blob){
+  const url=URL.createObjectURL(blob);
+  const d=document.createElement('div'); d.className='m';
+  const b=document.createElement('b'); b.textContent=who+': '; d.appendChild(b);
+  d.appendChild(document.createTextNode(info.name));
+  const ty=(info.type||'');
+  if(ty.startsWith('image/')){
+    const a=document.createElement('a'); a.href=url; a.target='_blank'; a.rel='noopener';
+    const im=document.createElement('img'); im.src=url; a.appendChild(im); d.appendChild(a);
+  }else if(ty.startsWith('video/')){
+    const v=document.createElement('video'); v.src=url; v.controls=true; v.playsInline=true; d.appendChild(v);
+  }else if(ty.startsWith('audio/')){
+    const a=document.createElement('audio'); a.src=url; a.controls=true; d.appendChild(a);
+  }
+  const dl=document.createElement('a'); dl.href=url; dl.download=info.name; dl.textContent='⬇ Save karo';
+  dl.style.display='inline-block'; dl.style.marginTop='6px'; d.appendChild(dl);
+  $('msgs').appendChild(d); $('msgs').scrollTop=1e9;
+}
+function updateRx(t){
+  if(t.p&&t.info) t.p.bar.value=Math.round(100*t.got/t.info.n);
+}
+// Badi files (64 MB+) RAM mein nahi, phone ki storage (OPFS) mein seedha likhi jaati hain.
+const HAS_OPFS=!!(navigator.storage&&navigator.storage.getDirectory);
+const WIN=256;            // ek saath kitne chunk (32 KB each) bina ack ke bhej sakte hain
+const acks={},aborted=new Set();
+let wl=null;
+function fmtSize(b){ return b>=1e9?(b/1e9).toFixed(2)+' GB':Math.max(1,Math.round(b/1e6))+' MB'; }
+async function rmOpfs(name){ try{ const r=await navigator.storage.getDirectory(); await r.removeEntry(name); }catch(_){} }
+async function cleanOpfs(){ try{ const r=await navigator.storage.getDirectory(); for await(const k of r.keys()) await r.removeEntry(k,{recursive:true}); }catch(_){} }
+async function keepAwake(){
+  try{
+    if(navigator.wakeLock&&!wl){ wl=await navigator.wakeLock.request('screen'); wl.addEventListener('release',()=>{ wl=null; }); }
+  }catch(_){}
+}
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&conn&&conn.open) keepAwake(); });
+
+function getT(id){
+  let t=rx[id];
+  if(!t){
+    t=rx[id]={chunks:[],got:0,info:null,q:Promise.resolve(),disk:false,failed:false};
+    t.infoP=new Promise(r=>{ t.resolveInfo=r; });
+  }
+  return t;
+}
+async function tryFinish(id){
+  const t=rx[id]; if(!t||!t.info||t.done||t.failed||t.got!==t.info.n) return;
+  t.done=true;
+  let blob;
+  try{
+    if(t.disk){
+      await t.q; await t.w.close();
+      const file=await t.fh.getFile();
+      blob=file.slice(0,file.size,t.info.type||'application/octet-stream');
+    }else{
+      blob=new Blob(t.chunks,{type:t.info.type||'application/octet-stream'});
+    }
+  }catch(e){
+    if(t.p) t.p.row.remove();
+    addMsg('','File save nahi ho payi: '+e.message,true); delete rx[id]; return;
+  }
+  if(t.p) t.p.row.remove();
+  if(t.info.sync!==undefined) fillSlot(t.info.sync,blob,t.disk?t.name:null);
+  else renderFile(partner||'Dost',t.info,blob);
+  t.chunks=null; delete rx[id];
+}
+async function gotInfo(d){
+  const t=getT(d.id); t.info=d;
+  t.p=addProgress((partner||'Dost')+' se aa raha hai: '+d.name+' ('+fmtSize(d.size)+')');
+  let failMsg='';
+  if(d.size>64*1024*1024){
+    if(HAS_OPFS){
+      try{
+        const est=navigator.storage.estimate?await navigator.storage.estimate():null;
+        if(est&&est.quota!==undefined&&est.usage!==undefined&&(est.quota-est.usage)<d.size*1.05){
+          failMsg='Phone mein jagah kam hai (sirf '+fmtSize(est.quota-est.usage)+' bachi). Jagah banao aur dobara bhejne ko kaho.';
+        }else{
+          const root=await navigator.storage.getDirectory();
+          t.name=(d.sync!==undefined?'sync-':'file-')+d.id;
+          t.fh=await root.getFileHandle(t.name,{create:true});
+          t.w=await t.fh.createWritable();
+          t.disk=true;
+        }
+      }catch(e){
+        if(d.size>1.5e9) failMsg='Phone ye badi file save nahi kar paaya: '+e.message;
+      }
+    }else if(d.size>1.5e9){
+      failMsg='Is browser mein itni badi file nahi aa sakti. Chrome update karo.';
+    }
+  }
+  if(failMsg){
+    t.failed=true; if(t.p) t.p.row.remove();
+    addMsg('',failMsg,true); send({t:'abort',id:d.id});
+  }
+  t.resolveInfo();
+  updateRx(t); tryFinish(d.id);
+}
+async function onChunk(m){
+  const t=getT(m.id);
+  await t.infoP;
+  if(t.failed||t.done) return;
+  try{
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(m.iv)},key,new Uint8Array(m.ct));
+    if(t.disk){
+      const pos=m.i*(t.info.ch||32768);
+      t.q=t.q.then(()=>t.w.write({type:'write',position:pos,data:pt}));
+      await t.q;
+    }else if(!t.chunks[m.i]){ t.chunks[m.i]=pt; }
+    t.got++;
+  }catch(e){
+    if(t.disk&&!t.failed){
+      t.failed=true; if(t.p) t.p.row.remove();
+      addMsg('','File likhne mein error: '+e.message,true); send({t:'abort',id:m.id});
+    }
+    return;
+  }
+  if(t.got%32===0||t.got===t.info.n) send({t:'ack',id:m.id,n:t.got});
+  updateRx(t); tryFinish(m.id);
+}
+async function sendFile(f,extra){
+  const CH=32768, n=Math.max(1,Math.ceil(f.size/CH)), id=Math.random().toString(36).slice(2);
+  const info=Object.assign({t:'fileinfo',id,name:f.name,type:f.type,size:f.size,n,ch:CH},extra||{});
+  if(f.size>2e8) addMsg('','Badi file ('+fmtSize(f.size)+') ja rahi hai. Dono phone ki screen on aur ye page khula rakho. Net ke hisaab se 30-90 min lag sakte hain.',true);
+  const p=addProgress('Bhej raha hoon: '+info.name);
+  await send(info);
+  for(let i=0;i<n;i++){
+    if(aborted.has(id)){ p.row.remove(); addMsg('','Dost ka phone "'+info.name+'" nahi le paaya, bhejna band.',true); return; }
+    if(!conn||!conn.open){ p.row.remove(); addMsg('','Bhejna beech mein ruk gaya: '+info.name,true); return; }
+    while(i-(acks[id]||0)>WIN){
+      if(aborted.has(id)||!conn||!conn.open) break;
+      await new Promise(r=>setTimeout(r,30));
+    }
+    if(aborted.has(id)||!conn||!conn.open){ i--; continue; }
+    const buf=await f.slice(i*CH,(i+1)*CH).arrayBuffer();
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,buf);
+    while(conn.dataChannel&&conn.dataChannel.bufferedAmount>1000000) await new Promise(r=>setTimeout(r,40));
+    conn.send({b:1,id,i,iv,ct});
+    p.bar.value=Math.round(100*Math.min(i+1,Math.max(acks[id]||0,i+1-WIN))/n);
+  }
+  p.row.remove();
+  if(!extra||extra.sync===undefined) renderFile('Tum',info,f);
+}
+
+function onCall(call){
+  call.answer();
+  const isShare=call.metadata&&call.metadata.kind==='share';
+  call.on('stream',s=>{
+    if(isShare){
+      const big=$('big'); big.srcObject=s; big.controls=false; big.muted=false;
+      $('stage').classList.add('share'); big.play().catch(()=>{});
+    }else{ $('them').srcObject=s; }
+  });
+  call.on('close',()=>{ if(isShare) hideBig(); });
+}
+
+function showBig(){ $('stage').classList.add('share'); $('bStop').hidden=false; }
+function hideBig(){
+  const big=$('big'); try{big.pause();}catch(_){}
+  big.srcObject=null; big.removeAttribute('src'); big.load(); big.controls=false;
+  $('stage').classList.remove('share'); $('bStop').hidden=true;
+}
+function stopShare(notify){
+  if(shareCall){ try{shareCall.close();}catch(_){} shareCall=null; }
+  if(shared&&ownsTracks){ shared.getTracks().forEach(t=>t.stop()); }
+  shared=null; ownsTracks=false;
+  if(fileURL){ URL.revokeObjectURL(fileURL); fileURL=null; }
+  hideBig();
+  if(notify) send({t:'sharestop'});
+}
+
+$('bScreen').onclick=async()=>{
+  if(!conn||!conn.open){ addMsg('','Pehle dost ko connect hone do.',true); return; }
+  if(!navigator.mediaDevices.getDisplayMedia){ addMsg('','Screen share is device/browser par nahi chalta (mobile browsers mein nahi). Laptop use karo ya Movie/Song file chalao.',true); return; }
+  try{
+    closeSync(true);
+    stopShare(false);
+    const s=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true});
+    shared=s; ownsTracks=true;
+    const big=$('big'); big.srcObject=s; big.muted=true; big.controls=false; big.play().catch(()=>{});
+    showBig();
+    shareCall=peer.call(conn.peer,s,{metadata:{kind:'share'}});
+    s.getVideoTracks()[0].onended=()=>stopShare(true);
+    addMsg('','Screen share chalu. Tab share karte waqt "Share tab audio" tick karna.',true);
+  }catch(e){ addMsg('','Screen share cancel/fail: '+e.message,true); }
+};
+
+$('bFile').onclick=()=>{
+  if(!conn||!conn.open){ addMsg('','Pehle dost ko connect hone do.',true); return; }
+  $('file').click();
+};
+$('file').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{
+    closeSync(true);
+    stopShare(false);
+    fileURL=URL.createObjectURL(f);
+    const big=$('big'); big.srcObject=null; big.src=fileURL; big.muted=false; big.controls=true;
+    showBig(); await big.play();
+    const s=big.captureStream?big.captureStream():big.mozCaptureStream();
+    shared=s; ownsTracks=false;
+    shareCall=peer.call(conn.peer,s,{metadata:{kind:'share'}});
+    addMsg('','"'+f.name+'" chal rahi hai. Play/pause/seek aap karoge, dost wahi dekhega. Headphone lagao to echo nahi hogi.',true);
+  }catch(err){ addMsg('','File nahi chali: '+err.message,true); stopShare(false); }
+};
+$('bStop').onclick=()=>stopShare(true);
+
+// ---------- Saath Dekho (Sync): dono taraf same time play/pause/seek/photo ----------
+let sync=null,supUntil=0;
+const sv=$('syncv'),si=$('synci'),sph=$('syncph');
+function suppress(){ supUntil=Date.now()+800; }
+function mine(){ return Date.now()>supUntil; }
+function mkBtn(label,fn){ const b=document.createElement('button'); b.className='sbtn'; b.textContent=label; b.onclick=fn; return b; }
+
+function renderSync(){
+  if(!sync) return;
+  const it=sync.items[sync.idx]; if(!it) return;
+  suppress();
+  $('stage').classList.add('sync');
+  $('bPrev').hidden=$('bNext').hidden=$('bSyncStop').hidden=false;
+  try{sv.pause();}catch(_){}
+  sv.style.display='none'; si.style.display='none'; sph.style.display='none';
+  if(!it.url){
+    sph.textContent='"'+it.name+'" ka intezaar hai... Apni file chuno ya dost se maango (chat mein button hain).';
+    sph.style.display='flex';
+  }else if(it.kind==='image'){
+    si.src=it.url; si.style.display='block';
+  }else{
+    sv.src=it.url; sv.style.display='block'; sv.load();
+  }
+  $('syncinfo').textContent=(sync.idx+1)+'/'+sync.items.length+' · '+it.name;
+}
+function go(idx,remote){
+  if(!sync||idx<0||idx>=sync.items.length) return;
+  sync.idx=idx; renderSync();
+  if(!remote) send({t:'sync',a:'goto',idx});
+}
+function closeSync(notify){
+  if(!sync) return;
+  suppress();
+  try{sv.pause();}catch(_){}
+  sv.removeAttribute('src'); sv.load(); si.removeAttribute('src');
+  sync.items.forEach(i=>{ if(i.url) URL.revokeObjectURL(i.url); if(i.opfs) rmOpfs(i.opfs); });
+  sync=null;
+  $('stage').classList.remove('sync');
+  $('bPrev').hidden=$('bNext').hidden=$('bSyncStop').hidden=true;
+  if(notify) send({t:'syncstop'});
+}
+function tryPlay(){
+  sv.play().catch(()=>{ addMsg('','Browser ne auto-play roka. Video par ek baar tap karke ▶ dabao.',true); });
+}
+function applySync(d){
+  if(d.a==='goto'){ go(d.idx,true); return; }
+  if(!sync) return;
+  const it=sync.items[sync.idx];
+  if(!it||it.kind==='image'||!it.url) return;
+  suppress();
+  if(d.a==='pause'){ sv.pause(); sv.currentTime=d.time; }
+  else if(d.a==='seek'){ sv.currentTime=d.time; if(d.playing&&sv.paused) tryPlay(); }
+  else if(d.a==='play'){ if(Math.abs(sv.currentTime-d.time)>0.6) sv.currentTime=d.time; tryPlay(); }
+}
+sv.addEventListener('play',()=>{ if(mine()) send({t:'sync',a:'play',time:sv.currentTime}); });
+sv.addEventListener('pause',()=>{ if(mine()&&!sv.ended) send({t:'sync',a:'pause',time:sv.currentTime}); });
+sv.addEventListener('seeked',()=>{ if(mine()) send({t:'sync',a:'seek',time:sv.currentTime,playing:!sv.paused}); });
+
+function fillSlot(idx,blob,opfsName){
+  if(!sync) return;
+  const it=sync.items[idx]; if(!it) return;
+  if(it.url) URL.revokeObjectURL(it.url);
+  it.url=URL.createObjectURL(blob); it.file=blob;
+  if(opfsName) it.opfs=opfsName;
+  if(sync.idx===idx) renderSync();
+}
+function syncOffer(){
+  const row=document.createElement('div'); row.className='m sys';
+  row.appendChild(document.createTextNode('Dost saath dekhna chahta hai ('+sync.items.length+' file). Photos apne aap aa jaayengi. Video/song ke liye: '));
+  row.appendChild(document.createElement('br'));
+  row.appendChild(mkBtn('📂 Meri file chuno',()=>$('syncpick').click()));
+  row.appendChild(mkBtn('⬇ Dost se maango',()=>{
+    if(!sync) return;
+    const need=[]; sync.items.forEach((it,i)=>{ if(!it.url&&it.kind!=='image') need.push(i); });
+    if(need.length){ send({t:'syncreq',need}); addMsg('','Dost se maang liya, aa raha hai...',true); }
+  }));
+  $('msgs').appendChild(row); $('msgs').scrollTop=1e9;
+}
+function onSyncStart(d){
+  stopShare(false); closeSync(false);
+  sync={items:d.items.map(i=>({name:i.name,size:i.size,type:i.type,kind:i.kind,url:null,file:null})),idx:0};
+  renderSync(); syncOffer();
+}
+async function serveSync(need){
+  if(!sync) return;
+  for(const i of need){
+    const it=sync.items[i];
+    if(it&&it.file) await sendFile(it.file,{sync:i,name:it.name});
+  }
+}
+function startSync(files){
+  closeSync(false); stopShare(true);
+  const items=files.map(f=>({
+    name:f.name,size:f.size,type:f.type,
+    kind:f.type.startsWith('image/')?'image':(f.type.startsWith('audio/')?'audio':'video'),
+    url:URL.createObjectURL(f),file:f
+  }));
+  sync={items,idx:0};
+  renderSync();
+  send({t:'syncstart',items:items.map(i=>({name:i.name,size:i.size,type:i.type,kind:i.kind}))});
+  addMsg('','Sync shuru. Ab aap ya dost, koi bhi play/pause/aage-peeche karo, dono ki screen par same hoga. Awaaz sabki apni.',true);
+  (async()=>{
+    for(let i=0;i<items.length;i++){
+      if(items[i].kind==='image') await sendFile(items[i].file,{sync:i,name:items[i].name});
+    }
+  })();
+}
+$('bSync').onclick=()=>{
+  if(!conn||!conn.open){ addMsg('','Pehle dost ko connect hone do.',true); return; }
+  $('syncfiles').click();
+};
+$('syncfiles').onchange=e=>{
+  const fs=[...e.target.files]; e.target.value='';
+  if(fs.length) startSync(fs);
+};
+$('syncpick').onchange=e=>{
+  const fs=[...e.target.files]; e.target.value='';
+  if(!sync) return;
+  let ok=0,cur=false;
+  for(const f of fs){
+    const i=sync.items.findIndex(it=>!it.url&&it.name===f.name&&it.size===f.size);
+    if(i>=0){ sync.items[i].url=URL.createObjectURL(f); sync.items[i].file=f; ok++; if(i===sync.idx) cur=true; }
+    else addMsg('','"'+f.name+'" dost ki file se match nahi hui (naam ya size alag hai).',true);
+  }
+  if(ok) addMsg('',ok+' file set ho gayi.',true);
+  if(cur) renderSync();
+};
+$('bPrev').onclick=()=>{ if(sync) go(sync.idx-1); };
+$('bNext').onclick=()=>{ if(sync) go(sync.idx+1); };
+$('bSyncStop').onclick=()=>closeSync(true);
+$('vVoice').oninput=e=>{ $('them').volume=+e.target.value; };
+document.addEventListener('keydown',e=>{
+  if(!sync||['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) return;
+  if(e.key==='ArrowRight') go(sync.idx+1);
+  if(e.key==='ArrowLeft') go(sync.idx-1);
+});
+
+$('bSend').onclick=()=>{
+  if(!conn||!conn.open){ addMsg('','Pehle dost ko connect hone do.',true); return; }
+  $('sendfile').click();
+};
+$('sendfile').onchange=async e=>{
+  const files=[...e.target.files]; e.target.value='';
+  for(const f of files){
+    if(f.size>8e9){ addMsg('','"'+f.name+'" bahut badi hai (8 GB se zyada).',true); continue; }
+    await sendFile(f);
+  }
+};
+
+$('bMic').onclick=e=>{
+  if(!localStream) return;
+  const t=localStream.getAudioTracks()[0]; if(!t) return;
+  t.enabled=!t.enabled; e.currentTarget.classList.toggle('off',!t.enabled);
+};
+$('bCam').onclick=e=>{
+  if(!localStream) return;
+  const t=localStream.getVideoTracks()[0]; if(!t) return;
+  t.enabled=!t.enabled; e.currentTarget.classList.toggle('off',!t.enabled);
+};
+$('bFull').onclick=()=>{
+  const el=$('stage');
+  if(document.fullscreenElement) document.exitFullscreen();
+  else if(el.requestFullscreen) el.requestFullscreen();
+  else if($('big').webkitEnterFullscreen) $('big').webkitEnterFullscreen();
+};
+$('bLeave').onclick=()=>{
+  try{ if(localStream) localStream.getTracks().forEach(t=>t.stop()); if(peer) peer.destroy(); }catch(_){}
+  location.reload();
+};
+$('f').onsubmit=async e=>{
+  e.preventDefault();
+  const v=$('txt').value.trim(); if(!v) return;
+  if(!conn||!conn.open){ addMsg('','Dost connected nahi hai.',true); return; }
+  $('txt').value=''; addMsg('Tum',v); await send({t:'chat',text:v});
+};
+</script>
+</body>
+</html>
